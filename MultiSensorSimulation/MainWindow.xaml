@@ -1,0 +1,472 @@
+﻿<Window x:Class="MultiSensorSimulation.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        mc:Ignorable="d"
+        Title="Multi-Sensor Human Detection System" 
+        Height="950" Width="1900"
+        WindowState="Maximized"
+        Background="#F5F7FA">
+
+    <Window.Resources>
+        <Style TargetType="GroupBox">
+            <Setter Property="Foreground" Value="#2C3E50"/>
+            <Setter Property="BorderBrush" Value="#BDC3C7"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="#34495E"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="Slider">
+            <Setter Property="Foreground" Value="#3498DB"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+
+        <Style x:Key="HeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#2980B9"/>
+            <Setter Property="Margin" Value="0,5,0,10"/>
+        </Style>
+
+        <Style x:Key="SubHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#7F8C8D"/>
+            <Setter Property="Margin" Value="0,8,0,4"/>
+        </Style>
+
+        <Style x:Key="FormulaBox" TargetType="Border">
+            <Setter Property="Background" Value="#ECF0F1"/>
+            <Setter Property="BorderBrush" Value="#95A5A6"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="FormulaText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas, Courier New"/>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- HEADER BAR -->
+        <Border Grid.Row="0" Background="#2C3E50" Padding="15,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="🔍" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="Multi-Sensor Human Detection System" 
+                               FontSize="20" FontWeight="Bold" Foreground="White" 
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Label Content="Global Gain:" Foreground="White" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <Slider x:Name="SliderGain" Minimum="0.5" Maximum="3.0" Value="1.0" Width="120" TickFrequency="0.1" ValueChanged="OnParameterChanged"/>
+                    <TextBlock Text="{Binding ElementName=SliderGain, Path=Value, StringFormat=F2}" 
+                               Foreground="#ECF0F1" VerticalAlignment="Center" Margin="6,0,20,0" FontWeight="Bold" FontSize="12" MinWidth="35"/>
+
+                    <Label Content="Duration (s):" Foreground="White" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <Slider x:Name="SliderDuration" Minimum="5.0" Maximum="30.0" Value="10.0" Width="120" TickFrequency="1" ValueChanged="OnParameterChanged"/>
+                    <TextBlock Text="{Binding ElementName=SliderDuration, Path=Value, StringFormat=F0}" 
+                               Foreground="#ECF0F1" VerticalAlignment="Center" Margin="6,0,0,0" FontWeight="Bold" FontSize="12" MinWidth="25"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button x:Name="BtnRunSimulation" Content="▶ Run Detection" Background="#27AE60" Foreground="White"
+                            FontWeight="Bold" FontSize="12" Padding="15,6" Margin="4" Click="BtnRunSimulation_Click" BorderThickness="0" Cursor="Hand"/>
+                    <Button x:Name="BtnReset" Content="🔄 Reset" Background="#E74C3C" Foreground="White"
+                            FontWeight="Bold" FontSize="12" Padding="15,6" Margin="4" Click="BtnReset_Click" BorderThickness="0" Cursor="Hand"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- MAIN CONTENT -->
+        <Grid Grid.Row="1" Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" MinWidth="250"/>
+                <ColumnDefinition Width="*" MinWidth="600"/>
+                <ColumnDefinition Width="320" MinWidth="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT PANEL: SENSOR PARAMETERS -->
+            <Border Grid.Column="0" Background="White" CornerRadius="8" BorderBrush="#BDC3C7" BorderThickness="1" Margin="0,0,6,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="⚙️ SENSOR PARAMETERS" Style="{StaticResource HeaderStyle}"/>
+
+                        <!-- Thermal Sensor -->
+                        <GroupBox Header="🌡️ MLX90640 Thermal">
+                            <StackPanel>
+                                <Border Style="{StaticResource FormulaBox}">
+                                    <TextBlock Style="{StaticResource FormulaText}" Text="T(t) = Tamb + ΔT·(1 - e^(-t/τ)) + Noise" TextWrapping="Wrap"/>
+                                </Border>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Time Constant τ (s):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderThermalTau, Path=Value, StringFormat=F1}" FontWeight="Bold" MinWidth="30" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderThermalTau" Minimum="0.5" Maximum="5.0" Value="2.0" TickFrequency="0.1" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Noise Amplitude (°C):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderThermalNoise, Path=Value, StringFormat=F3}" FontWeight="Bold" MinWidth="40" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderThermalNoise" Minimum="0.01" Maximum="0.2" Value="0.05" TickFrequency="0.01" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Sampling Rate (Hz):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderThermalRate, Path=Value, StringFormat=F1}" FontWeight="Bold" MinWidth="30" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderThermalRate" Minimum="4" Maximum="32" Value="16" TickFrequency="2" ValueChanged="OnParameterChanged"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- CO2 Sensor -->
+                        <GroupBox Header="💨 CO2 NDIR Sensor">
+                            <StackPanel>
+                                <Border Style="{StaticResource FormulaBox}">
+                                    <TextBlock Style="{StaticResource FormulaText}" Text="CO2(t) = Base + Rise·(1 - e^(-t/τ)) + Breath·sin(2πft)" TextWrapping="Wrap"/>
+                                </Border>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Response Time τ (s):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderCO2Tau, Path=Value, StringFormat=F1}" FontWeight="Bold" MinWidth="30" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderCO2Tau" Minimum="5" Maximum="20" Value="10" TickFrequency="1" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Human Rise (ppm):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderCO2Rise, Path=Value, StringFormat=F0}" FontWeight="Bold" MinWidth="35" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderCO2Rise" Minimum="100" Maximum="500" Value="300" TickFrequency="50" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Breath Amplitude (ppm):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderCO2Breath, Path=Value, StringFormat=F0}" FontWeight="Bold" MinWidth="30" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderCO2Breath" Minimum="5" Maximum="40" Value="20" TickFrequency="5" ValueChanged="OnParameterChanged"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Radar Sensor -->
+                        <GroupBox Header="📡 24GHz Doppler Radar">
+                            <StackPanel>
+                                <Border Style="{StaticResource FormulaBox}">
+                                    <TextBlock Style="{StaticResource FormulaText}" Text="f_d = (2·v·f_c)/c,  c = 3×10⁸ m/s" TextWrapping="Wrap"/>
+                                </Border>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Target Velocity (m/s):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderRadarVel, Path=Value, StringFormat=F1}" FontWeight="Bold" MinWidth="30" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderRadarVel" Minimum="0.5" Maximum="5.0" Value="2.0" TickFrequency="0.5" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Doppler Gain:"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderRadarGain, Path=Value, StringFormat=F2}" FontWeight="Bold" MinWidth="35" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderRadarGain" Minimum="0.5" Maximum="3.0" Value="1.0" TickFrequency="0.1" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Clutter Level:"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderRadarClutter, Path=Value, StringFormat=F2}" FontWeight="Bold" MinWidth="35" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderRadarClutter" Minimum="0" Maximum="0.3" Value="0.1" TickFrequency="0.05" ValueChanged="OnParameterChanged"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Microphone Sensor -->
+                        <GroupBox Header="🎤 MEMS Microphone">
+                            <StackPanel>
+                                <Border Style="{StaticResource FormulaBox}">
+                                    <TextBlock Style="{StaticResource FormulaText}" Text="V(t) = A·sin(2πft) + Hum·sin(2π·50t) + Noise" TextWrapping="Wrap"/>
+                                </Border>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Signal Freq (Hz):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderMicFreq, Path=Value, StringFormat=F0}" FontWeight="Bold" MinWidth="35" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderMicFreq" Minimum="100" Maximum="500" Value="200" TickFrequency="50" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Amplitude:"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderMicAmp, Path=Value, StringFormat=F2}" FontWeight="Bold" MinWidth="35" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderMicAmp" Minimum="0.1" Maximum="1.0" Value="0.5" TickFrequency="0.1" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Hum Amplitude:"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderMicHum, Path=Value, StringFormat=F3}" FontWeight="Bold" MinWidth="40" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderMicHum" Minimum="0" Maximum="0.1" Value="0.05" TickFrequency="0.01" ValueChanged="OnParameterChanged"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- IMU Sensor -->
+                        <GroupBox Header="📊 6-Axis IMU">
+                            <StackPanel>
+                                <Border Style="{StaticResource FormulaBox}">
+                                    <TextBlock Style="{StaticResource FormulaText}" Text="a(t) = Motion + Bias + Drift + Noise" TextWrapping="Wrap"/>
+                                </Border>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Accel Bias (m/s²):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderIMUBias, Path=Value, StringFormat=F3}" FontWeight="Bold" MinWidth="40" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderIMUBias" Minimum="0" Maximum="0.2" Value="0.05" TickFrequency="0.01" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Gyro Drift (°/s):"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderIMUDrift, Path=Value, StringFormat=F3}" FontWeight="Bold" MinWidth="40" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderIMUDrift" Minimum="0" Maximum="0.05" Value="0.01" TickFrequency="0.005" ValueChanged="OnParameterChanged"/>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Content="Noise Level:"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderIMUNoise, Path=Value, StringFormat=F3}" FontWeight="Bold" MinWidth="40" TextAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="SliderIMUNoise" Minimum="0.005" Maximum="0.05" Value="0.02" TickFrequency="0.005" ValueChanged="OnParameterChanged"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- CENTER PANEL: PLOTS -->
+            <Border Grid.Column="1" Background="White" CornerRadius="8" BorderBrush="#BDC3C7" BorderThickness="1" Margin="0,0,6,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="📈 SENSOR SIGNALS (Time &amp; Frequency Domain)" 
+                               Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,8"/>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <Grid Margin="4">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="200"/>
+                                <RowDefinition Height="200"/>
+                                <RowDefinition Height="200"/>
+                                <RowDefinition Height="200"/>
+                                <RowDefinition Height="200"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Thermal -->
+                            <GroupBox Grid.Row="0" Grid.Column="0" Header="🌡️ Thermal (Time)">
+                                <ScottPlot:WpfPlot x:Name="PlotThermalTime"/>
+                            </GroupBox>
+                            <GroupBox Grid.Row="0" Grid.Column="1" Header="🌡️ Thermal (FFT)">
+                                <ScottPlot:WpfPlot x:Name="PlotThermalFFT"/>
+                            </GroupBox>
+
+                            <!-- CO2 -->
+                            <GroupBox Grid.Row="1" Grid.Column="0" Header="💨 CO2 (Time)">
+                                <ScottPlot:WpfPlot x:Name="PlotCO2Time"/>
+                            </GroupBox>
+                            <GroupBox Grid.Row="1" Grid.Column="1" Header="💨 CO2 (FFT)">
+                                <ScottPlot:WpfPlot x:Name="PlotCO2FFT"/>
+                            </GroupBox>
+
+                            <!-- Radar -->
+                            <GroupBox Grid.Row="2" Grid.Column="0" Header="📡 Radar (Time)">
+                                <ScottPlot:WpfPlot x:Name="PlotRadarTime"/>
+                            </GroupBox>
+                            <GroupBox Grid.Row="2" Grid.Column="1" Header="📡 Radar (FFT)">
+                                <ScottPlot:WpfPlot x:Name="PlotRadarFFT"/>
+                            </GroupBox>
+
+                            <!-- Microphone -->
+                            <GroupBox Grid.Row="3" Grid.Column="0" Header="🎤 Microphone (Time)">
+                                <ScottPlot:WpfPlot x:Name="PlotMicTime"/>
+                            </GroupBox>
+                            <GroupBox Grid.Row="3" Grid.Column="1" Header="🎤 Microphone (FFT)">
+                                <ScottPlot:WpfPlot x:Name="PlotMicFFT"/>
+                            </GroupBox>
+
+                            <!-- IMU -->
+                            <GroupBox Grid.Row="4" Grid.Column="0" Header="📊 IMU Accel (Time)">
+                                <ScottPlot:WpfPlot x:Name="PlotIMUTime"/>
+                            </GroupBox>
+                            <GroupBox Grid.Row="4" Grid.Column="1" Header="📊 IMU (FFT)">
+                                <ScottPlot:WpfPlot x:Name="PlotIMUFFT"/>
+                            </GroupBox>
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- RIGHT PANEL: DETECTION & ANALYSIS -->
+            <Border Grid.Column="2" Background="White" CornerRadius="8" BorderBrush="#BDC3C7" BorderThickness="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        <TextBlock Text="🎯 DETECTION &amp; ANALYSIS" Style="{StaticResource HeaderStyle}"/>
+
+                        <!-- Robot Image -->
+                        <GroupBox Header="🤖 Detection Robot">
+                            <Border Background="#F5F7FA" CornerRadius="5" Padding="10">
+                                <Image x:Name="ImgRobot" 
+                                       Source="/Resources/robot.png" 
+                                       Stretch="Uniform" 
+                                       Height="200"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                            </Border>
+                        </GroupBox>
+
+                        <!-- Laplace Plot -->
+                        <GroupBox Header="📉 Laplace (S-Plane)">
+                            <ScottPlot:WpfPlot x:Name="PlotLaplace" Height="180"/>
+                        </GroupBox>
+
+                        <!-- Z-Domain Plot -->
+                        <GroupBox Header="🔵 Z-Domain (Discrete)">
+                            <ScottPlot:WpfPlot x:Name="PlotZDomain" Height="180"/>
+                        </GroupBox>
+
+                        <!-- Detection Status -->
+                        <GroupBox Header="🚨 Detection Status">
+                            <StackPanel>
+                                <Border x:Name="BorderDetectionStatus" Background="#F5F5F5" CornerRadius="5" Padding="10" Margin="0,4">
+                                    <StackPanel>
+                                        <TextBlock x:Name="TxtDetectionStatus" Text="⏹️ NO DETECTION" FontSize="16" FontWeight="Bold" 
+                                                   Foreground="#757575" HorizontalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtConfidence" Text="Overall Confidence: 0.0%" FontSize="12" 
+                                                   Foreground="#424242" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="Individual Sensor Confidences:" FontWeight="SemiBold" FontSize="11" Margin="0,8,0,4"/>
+                                <StackPanel x:Name="PanelConfidences">
+                                    <TextBlock x:Name="TxtConfThermal" Text="🌡️ Thermal: 0.0%" Margin="4,2" FontSize="10"/>
+                                    <TextBlock x:Name="TxtConfCO2" Text="💨 CO2: 0.0%" Margin="4,2" FontSize="10"/>
+                                    <TextBlock x:Name="TxtConfRadar" Text="📡 Radar: 0.0%" Margin="4,2" FontSize="10"/>
+                                    <TextBlock x:Name="TxtConfMic" Text="🎤 Mic: 0.0%" Margin="4,2" FontSize="10"/>
+                                    <TextBlock x:Name="TxtConfIMU" Text="📊 IMU: 0.0%" Margin="4,2" FontSize="10"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Signal Metrics -->
+                        <GroupBox Header="📊 Signal Metrics">
+                            <StackPanel>
+                                <TextBlock x:Name="TxtMetricRMS" Text="RMS: --" Margin="4,2" FontFamily="Consolas" FontSize="10"/>
+                                <TextBlock x:Name="TxtMetricPeakToPeak" Text="Peak-to-Peak: --" Margin="4,2" FontFamily="Consolas" FontSize="10"/>
+                                <TextBlock x:Name="TxtMetricMean" Text="Mean: --" Margin="4,2" FontFamily="Consolas" FontSize="10"/>
+                                <TextBlock x:Name="TxtMetricStdDev" Text="Std Dev: --" Margin="4,2" FontFamily="Consolas" FontSize="10"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Status Log -->
+                        <GroupBox Header="📝 Status Log">
+                            <ScrollViewer x:Name="StatusScroller" Height="110" Background="#FAFAFA">
+                                <TextBlock x:Name="TxtStatusLog" Text="System initialized..." FontSize="9" 
+                                            FontFamily="Consolas" TextWrapping="Wrap" Padding="4"/>
+                            </ScrollViewer>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- FOOTER BAR -->
+        <Border Grid.Row="2" Background="#34495E" Padding="10,6">
+            <Grid>
+                <TextBlock Text="Multi-Sensor Human Detection System | Real-time Simulation | Based on DetectionPipeline Architecture" 
+                           Foreground="#ECF0F1" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <TextBlock x:Name="TxtTimestamp" Text="Last Update: --" 
+                           Foreground="#BDC3C7" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+
+		<!-- Optional aesthetics -->
+		<ApplicationIcon />
+		<StartupObject>MultiSensorSimulation.App</StartupObject>
+		<RootNamespace>MultiSensorSimulation</RootNamespace>
+
+		<!-- Make it DPI aware and modern -->
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="Resources\robot.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Main dependencies -->
+		<PackageReference Include="ScottPlot.WPF" Version="5.1.57" />
+		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+		<PackageReference Include="System.Numerics.Vectors" Version="4.6.1" />
+	</ItemGroup>
+
+	<!-- Optional: make sure ScottPlot loads properly -->
+	<ItemGroup>
+		<Reference Include="System.Numerics" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Resource Include="Resources\robot.png">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	</ItemGroup>
+
+</Project>
