@@ -1,1 +1,10 @@
 .vs/ 
+.vs/ 
+bin/ 
+obj/ 
+*.cache 
+*.log 
+*MarkupCompile* 
+*.g.* 
+*.i.* 
+packages/ 
